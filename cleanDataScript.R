@@ -53,8 +53,17 @@ parseID <- function(inputFile) {
 
 parseADP <- function(inputFile) {
   fileName <- paste("RawData/ADP/", inputFile, ".xml", sep="")
-  df <- read_xml(fileName)
-  return(df)
+  xmlData <- xmlRoot(xmlParse(fileName))
+  size <- xmlSize(xmlData)
+  id <- vector(mode="character", length=size)
+  adp <- vector(mode="numeric", length=size)
+  for(i in 1:size) {
+    attrs <- xmlAttrs(xmlData[[i]])
+    id[i] <- attrs["id"]
+    adp[i] <- as.numeric(attrs["averagePick"])
+  }
+  dataFrame <- cbind(id,adp)
+  return(dataFrame)
 }
 
 writeStats <- function() {
@@ -69,6 +78,14 @@ writeID <- function() {
   for(i in 2011:2016) {
     dataFile <- parseID(i)
     fileName <- paste("CleanData/ID_to_Name/", i, "_clean.csv", sep="")
+    write.csv(dataFile, fileName)
+  }
+}
+
+writeADP <- function() {
+  for(i in 2011:2016) {
+    dataFile <- parseADP(i)
+    fileName <- paste("CleanData/ADP/", i, "_clean.csv", sep="")
     write.csv(dataFile, fileName)
   }
 }
