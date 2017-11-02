@@ -114,6 +114,8 @@ writeJoin <- function() {
     dp <- paste(playerName[,2], playerName[,1])
     idadp$Name <- dp
     total <- merge(idadp, stats, by = "Name")
+    total <- total[order(total[,3]),]
+    paste(total)
     totalFileName <- paste("CleanData/Total/", i, "_clean_total.csv", sep="")
     write.csv(total, totalFileName)
   }
