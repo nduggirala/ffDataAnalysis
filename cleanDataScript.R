@@ -34,20 +34,20 @@ parseID <- function(inputFile) {
   fileName <- paste("RawData/ID_to_Name/", inputFile, ".xml", sep="")
   xmlData <- xmlRoot(xmlParse(fileName))
   size <- xmlSize(xmlData)
-  id <- vector(mode="character", length=size)
-  name <- vector(mode="character", length=size)
-  position <- vector(mode="character", length=size)
-  team <- vector(mode="character", length=size)
+  Id <- vector(mode="character", length=size)
+  Name <- vector(mode="character", length=size)
+  Position <- vector(mode="character", length=size)
+  Team <- vector(mode="character", length=size)
   for(i in 1:size) {
     attrs <- xmlAttrs(xmlData[[i]])
-    id[i] <- attrs["id"]
-    name[i] <- attrs["name"]
-    position[i] <- attrs["position"]
-    team[i] <- attrs["team"]
+    Id[i] <- attrs["id"]
+    Name[i] <- attrs["name"]
+    Position[i] <- attrs["position"]
+    Team[i] <- attrs["team"]
   }
-  dataFrame <- cbind(id,name,position,team)
-  dataFrame <- dataFrame[dataFrame[,"position"] == "QB" | dataFrame[,"position"] == "RB" |
-                         dataFrame[,"position"] == "WR" | dataFrame[,"position"] == "TE",]
+  dataFrame <- cbind(Id,Name,Position,Team)
+  dataFrame <- dataFrame[dataFrame[,"Position"] == "QB" | dataFrame[,"Position"] == "RB" |
+                         dataFrame[,"Position"] == "WR" | dataFrame[,"Position"] == "TE",]
   return(dataFrame)
 }
 
@@ -55,21 +55,21 @@ parseADP <- function(inputFile) {
   fileName <- paste("RawData/ADP/", inputFile, ".xml", sep="")
   xmlData <- xmlRoot(xmlParse(fileName))
   size <- xmlSize(xmlData)
-  id <- vector(mode="character", length=size)
-  adp <- vector(mode="numeric", length=size)
+  Id <- vector(mode="character", length=size)
+  Adp <- vector(mode="numeric", length=size)
   for(i in 1:size) {
     attrs <- xmlAttrs(xmlData[[i]])
-    id[i] <- attrs["id"]
-    adp[i] <- as.numeric(attrs["averagePick"])
+    Id[i] <- attrs["id"]
+    Adp[i] <- as.numeric(attrs["averagePick"])
   }
-  dataFrame <- cbind(id,adp)
+  dataFrame <- cbind(Id,Adp)
   return(dataFrame)
 }
 
 writeStats <- function() {
   for(i in 2011:2016) {
     dataFile <- parseStats(i)
-    fileName <- paste("CleanData/Stats/", i, "_clean.csv", sep="")
+    fileName <- paste("CleanData/Stats/", i, "_clean_stats.csv", sep="")
     write.csv(dataFile, fileName)
   }
 }
@@ -77,7 +77,7 @@ writeStats <- function() {
 writeID <- function() {
   for(i in 2011:2016) {
     dataFile <- parseID(i)
-    fileName <- paste("CleanData/ID_to_Name/", i, "_clean.csv", sep="")
+    fileName <- paste("CleanData/ID_to_Name/", i, "_clean_id.csv", sep="")
     write.csv(dataFile, fileName)
   }
 }
@@ -85,7 +85,36 @@ writeID <- function() {
 writeADP <- function() {
   for(i in 2011:2016) {
     dataFile <- parseADP(i)
-    fileName <- paste("CleanData/ADP/", i, "_clean.csv", sep="")
+    fileName <- paste("CleanData/ADP/", i, "_clean_adp.csv", sep="")
     write.csv(dataFile, fileName)
+  }
+}
+
+writeAll <- function() {
+  writeADP()
+  writeStats()
+  writeID()
+}
+
+writeJoin <- function() {
+  for(i in 2011:2016) {
+    statFileName <- paste("CleanData/Stats/", i, "_clean_stats.csv", sep="")
+    idFileName <- paste("CleanData/ID_to_Name/", i, "_clean_id.csv", sep="")
+    adpFileName <- paste("CleanData/ADP/", i, "_clean_adp.csv", sep="")
+    stats <- read.csv(statFileName)
+    id_to_name <- read.csv(idFileName)
+    adp <- read.csv(adpFileName)
+    idadp <- merge(id_to_name, adp, by = "Id")
+    idadp <- idadp[order(idadp[,7]),]
+    idadp$X.x <- NULL
+    idadp$X.y <- NULL
+    idadp$Position <- NULL
+    idadp$Team <- NULL
+    playerName <- str_split(idadp$Name, "\\, ", simplify = TRUE)
+    dp <- paste(playerName[,2], playerName[,1])
+    idadp$Name <- dp
+    total <- merge(idadp, stats, by = "Name")
+    totalFileName <- paste("CleanData/Total/", i, "_clean_total.csv", sep="")
+    write.csv(total, totalFileName)
   }
 }
